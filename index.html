@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>RiseDaily</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F5C518">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="RiseDaily">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js');});}</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --gold:#F5C518;--gold-l:#FDF3C0;--gold-p:#FFFBE8;--gold-b:rgba(220,180,40,0.32);
+  --teal:#7ECEC4;--teal-l:#C8EDE9;--teal-p:#EAF8F6;--teal-d:#0F8A7E;
+  --red:#E05252;--red-l:#FDEAEA;
+  --w:#fff;--bg:#F7FDFB;
+  --td:#2C3E35;--tm:#5A6E65;--tl:#9EB5AE;
+  --bdr:rgba(126,206,196,0.28);
+}
+html,body{height:100%;font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--td);font-size:14px;line-height:1.5;overflow:hidden}
+
+/* ══ APP SHELL ══ */
+.app{width:100%;height:100vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* ══ TOPBAR ══ */
+.topbar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--gold-p);border-bottom:1.5px solid var(--gold-b);flex-shrink:0;min-height:52px}
+.logo{display:flex;align-items:center;gap:7px}
+.logo-mark{width:30px;height:30px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center}
+.logo-mark svg{width:17px;height:17px}
+.logo-text{font-size:17px;font-weight:700;color:#7A6000}
+.topbar-center{flex:1;display:flex;justify-content:center}
+.date-btn{display:inline-flex;align-items:center;gap:5px;background:var(--w);border:1px solid var(--gold-b);border-radius:8px;padding:5px 11px;cursor:pointer;font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:600;color:var(--td)}
+.date-btn:active{background:var(--gold-l)}
+.topbar-right{display:flex;gap:5px}
+.icon-btn{background:none;border:1px solid var(--gold-b);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--td);font-size:15px}
+.icon-btn:active{background:var(--gold-l)}
+
+/* ══ PROGRESS ══ */
+.prog-wrap{padding:6px 14px;background:#FDFCF5;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;align-items:center;gap:8px}
+.prog-track{flex:1;height:5px;background:var(--teal-l);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--teal));border-radius:99px;transition:width .4s}
+.prog-txt{font-size:11px;color:var(--tm);white-space:nowrap;min-width:60px;text-align:right}
+
+/* ══ SCREENS ══ */
+/* Two screens side by side, translate to show one at a time */
+.screens{flex:1;display:flex;overflow:hidden;position:relative}
+.screen{width:100%;height:100%;flex-shrink:0;overflow-y:auto;-webkit-overflow-scrolling:touch;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+
+/* LIST SCREEN */
+.screen-list{transform:translateX(0%)}
+.screen-list.hidden{transform:translateX(-100%)}
+
+/* DETAIL SCREEN */
+.screen-detail{position:absolute;top:0;left:0;width:100%;height:100%;transform:translateX(100%);background:var(--bg)}
+.screen-detail.visible{transform:translateX(0%)}
+
+/* On desktop: side by side always */
+@media(min-width:700px){
+  .screen-list{width:260px;flex-shrink:0;border-right:1.5px solid var(--gold-b);transform:none!important}
+  .screen-detail{position:relative;width:calc(100% - 260px);transform:none!important;left:auto}
+  .back-btn{display:none!important}
+  .screens{display:flex}
+}
+
+/* ══ LIST SCREEN ══ */
+.list-top{padding:10px 14px 6px;display:flex;gap:7px;align-items:center;flex-shrink:0;background:var(--w);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:5}
+.srch-inp{flex:1;border:1px solid var(--gold-b);border-radius:8px;background:var(--gold-p);padding:7px 10px;font-size:13px;color:var(--td);font-family:'Be Vietnam Pro',sans-serif;outline:none}
+.srch-inp:focus{border-color:var(--teal);background:var(--w)}
+.srch-inp::placeholder{color:var(--tl)}
+.add-cat-btn{background:var(--teal);border:none;border-radius:8px;color:#fff;width:34px;height:34px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.add-cat-btn:active{opacity:.8}
+
+.cat-item{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid rgba(126,206,196,.13);cursor:pointer;transition:background .1s;user-select:none;background:var(--w)}
+.cat-item:active{background:var(--teal-p)}
+.cat-item.active{background:var(--teal-p);border-left:3px solid var(--teal)}
+.drag-handle{color:var(--tl);font-size:16px;flex-shrink:0;cursor:grab;padding:2px;touch-action:none}
+.drag-handle:active{cursor:grabbing;color:var(--teal-d)}
+.cat-num{font-size:11px;font-weight:700;color:var(--tl);min-width:20px;text-align:right;flex-shrink:0}
+.cat-item.active .cat-num{color:var(--teal-d)}
+.cat-name{font-size:14px;color:var(--td);flex:1;font-weight:500}
+.cat-item.active .cat-name{color:var(--teal-d);font-weight:600}
+.cat-right{display:flex;align-items:center;gap:6px}
+.cat-done-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);display:none}
+.cat-done-dot.show{display:block}
+.cat-chevron{color:var(--tl);font-size:14px}
+.cat-edit-btns{display:flex;gap:2px}
+.cat-edit-btn{background:none;border:none;cursor:pointer;padding:4px 5px;border-radius:6px;color:var(--tl);font-size:15px;line-height:1}
+.cat-edit-btn:active{background:var(--gold-l);color:#8A6800}
+.cat-edit-btn.del:active{background:var(--red-l);color:var(--red)}
+.cat-item.dragging{opacity:.45}
+.cat-item.drag-over{border-top:2.5px solid var(--teal)}
+
+/* ══ DETAIL SCREEN ══ */
+.detail-topbar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--gold-p);border-bottom:1.5px solid var(--gold-b);flex-shrink:0;position:sticky;top:0;z-index:5}
+.back-btn{background:none;border:1px solid var(--gold-b);border-radius:8px;padding:5px 10px;cursor:pointer;font-family:'Be Vietnam Pro',sans-serif;font-size:13px;color:#8A6800;display:flex;align-items:center;gap:4px}
+.back-btn:active{background:var(--gold-l)}
+.detail-title{flex:1;font-size:14px;font-weight:700;color:#7A6000;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.detail-edit-btn{background:none;border:1px solid var(--gold-b);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:12px;color:#8A6800;display:flex;align-items:center;gap:3px;font-family:'Be Vietnam Pro',sans-serif}
+.detail-edit-btn:active{background:var(--gold-l)}
+
+.detail-kpi{padding:8px 14px;background:#FFFDF5;border-bottom:1px solid var(--bdr);font-size:12px;color:var(--tm);line-height:1.5}
+
+/* LAYER HEADERS */
+.layer-hdr{padding:7px 14px;background:#FFFDF0;font-size:10px;font-weight:700;color:#8A6800;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px dashed var(--gold-b);border-top:1px solid var(--bdr)}
+
+/* TIMELINE */
+.tl-body{padding:10px 14px 12px;background:#FFFDF5;font-size:13px;color:var(--tm);line-height:1.75}
+.tl-body p{margin-bottom:5px}
+.tl-body p:last-child{margin-bottom:0}
+.tags-row{margin-top:9px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.tag{background:var(--gold-l);color:#8A6800;border:1px solid var(--gold-b);border-radius:5px;padding:3px 9px;font-size:11.5px;display:inline-flex;align-items:center;gap:3px}
+.tag-del{background:none;border:none;cursor:pointer;color:#8A6800;font-size:11px;padding:0;line-height:1;opacity:.55}
+.tag-del:active{opacity:1}
+.add-tag-btn{background:none;border:1px dashed var(--gold-b);border-radius:5px;padding:3px 10px;font-size:11.5px;color:var(--tl);cursor:pointer;font-family:'Be Vietnam Pro',sans-serif}
+.add-tag-btn:active{background:var(--gold-l);color:#8A6800}
+
+/* TASKS */
+.tasks-wrap{background:var(--w)}
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid rgba(126,206,196,.12);cursor:pointer}
+.task-row:active{background:var(--teal-p)}
+.chk{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--teal);background:var(--w);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .13s}
+.chk.done{background:var(--teal);border-color:var(--teal);color:#fff}
+.task-body{flex:1;min-width:0}
+.task-name{font-size:13.5px;font-weight:600;color:var(--td);line-height:1.35}
+.task-name.done{text-decoration:line-through;color:var(--tl);font-weight:400}
+.task-det{font-size:12px;color:var(--tm);margin-top:3px;line-height:1.4}
+.task-btns{display:flex;gap:4px;flex-shrink:0;align-items:flex-start;margin-top:1px}
+.note-toggle-btn{background:none;border:1px solid var(--gold-b);border-radius:6px;padding:3px 8px;font-size:11px;color:#8A6800;cursor:pointer;font-family:'Be Vietnam Pro',sans-serif;white-space:nowrap}
+.note-toggle-btn:active{background:var(--gold-l)}
+.task-act-btn{background:none;border:none;cursor:pointer;font-size:15px;padding:3px 4px;border-radius:5px;color:var(--tl);line-height:1}
+.task-act-btn:active{background:var(--gold-l);color:#8A6800}
+.task-act-btn.del:active{background:var(--red-l);color:var(--red)}
+
+/* NOTE PANEL — auto height, no scroll */
+.note-panel{display:none;padding:10px 14px 12px 43px;background:#FFFDF0;border-bottom:1px dashed var(--gold-b)}
+.note-panel.open{display:block}
+.note-ta{width:100%;border:1px solid var(--gold-b);border-radius:8px;background:var(--w);padding:8px 10px;font-size:13px;color:var(--td);font-family:'Be Vietnam Pro',sans-serif;resize:none;outline:none;overflow:hidden;min-height:64px;line-height:1.6}
+.note-ta:focus{border-color:var(--teal)}
+.note-ta::placeholder{color:var(--tl)}
+.note-save-btn{margin-top:7px;background:var(--teal);color:#fff;border:none;border-radius:7px;padding:6px 16px;font-size:12.5px;cursor:pointer;font-family:'Be Vietnam Pro',sans-serif}
+.note-save-btn:active{opacity:.85}
+
+.add-task-row{padding:9px 14px;display:flex;gap:7px;align-items:center;border-top:1px dashed var(--gold-b);background:var(--w)}
+.add-task-inp{flex:1;border:1px solid var(--gold-b);border-radius:8px;background:var(--gold-p);padding:7px 10px;font-size:13px;color:var(--td);font-family:'Be Vietnam Pro',sans-serif;outline:none}
+.add-task-inp:focus{border-color:var(--teal);background:var(--w)}
+.add-task-inp::placeholder{color:var(--tl)}
+.add-task-btn{background:var(--teal);border:none;border-radius:8px;color:#fff;padding:7px 14px;font-size:13px;cursor:pointer;font-family:'Be Vietnam Pro',sans-serif;white-space:nowrap}
+.add-task-btn:active{opacity:.85}
+
+/* STREAK */
+.streak-wrap{padding:10px 14px 14px;background:var(--teal-p)}
+.streak-dots{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:6px}
+.dot{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--teal-l);background:var(--w);display:flex;align-items:center;justify-content:center;font-size:9.5px;color:var(--tl);font-weight:600}
+.dot.done{background:var(--teal);border-color:var(--teal);color:#fff}
+.dot.today{border-color:var(--gold);border-width:2px;font-weight:700}
+.dot.future{opacity:.28}
+.streak-cnt{font-size:12px;color:var(--teal-d);font-weight:600;margin-left:5px}
+
+/* ══ CALENDAR OVERLAY ══ */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:200;align-items:flex-start;justify-content:center;padding-top:60px}
+.overlay.open{display:flex}
+.cal-box{background:var(--w);border-radius:14px;border:1.5px solid var(--gold-b);padding:16px;width:290px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.cal-nav button{background:none;border:1px solid var(--gold-b);border-radius:7px;padding:4px 12px;cursor:pointer;font-size:15px;color:#8A6800;font-family:'Be Vietnam Pro',sans-serif}
+.cal-nav button:active{background:var(--gold-l)}
+.cal-month-label{font-size:14px;font-weight:700;color:#7A6000}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-dow{font-size:10px;font-weight:700;color:var(--tl);text-align:center;padding:3px 0}
+.cal-day{height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--tm);cursor:pointer;border:1px solid transparent}
+.cal-day:active{background:var(--teal-p)}
+.cal-day.today{border-color:var(--gold);color:#8A6800;font-weight:700}
+.cal-day.selected{background:var(--teal);color:#fff;font-weight:700}
+.cal-day.other-month{color:var(--tl);opacity:.35;cursor:default}
+.cal-close{width:100%;margin-top:11px;background:none;border:1px solid var(--bdr);border-radius:8px;padding:7px;font-size:13px;cursor:pointer;color:var(--tm);font-family:'Be Vietnam Pro',sans-serif}
+.cal-close:active{background:var(--gold-p)}
+
+/* ══ SETTINGS SHEET ══ */
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center}
+.sheet-overlay.open{display:flex}
+.sheet{background:var(--w);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom,20px);max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .26s cubic-bezier(.4,0,.2,1)}
+.sheet-overlay.open .sheet{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--bdr);border-radius:99px;margin:10px auto 0}
+.sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px}
+.sheet-hdr-title{font-size:17px;font-weight:700;color:var(--td)}
+.sheet-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--tl);padding:4px;border-radius:50%;line-height:1}
+.sheet-sec{padding:0 16px 10px}
+.sheet-sec-title{font-size:10px;font-weight:700;color:var(--tl);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px}
+.sheet-row{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--gold-p);border-radius:12px;margin-bottom:8px;cursor:pointer}
+.sheet-row:active{background:var(--gold-l)}
+.sheet-icon{width:40px;height:40px;border-radius:10px;background:var(--gold-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:#8A6800}
+.sheet-row-text{flex:1}
+.sheet-row-label{font-size:14px;font-weight:600;color:var(--td)}
+.sheet-row-sub{font-size:12px;color:var(--tm);margin-top:1px}
+.sheet-row-arrow{color:var(--tl);font-size:16px}
+.sheet-divider{height:1px;background:var(--bdr);margin:8px 16px}
+.sheet-danger .sheet-icon{background:var(--red-l);color:var(--red)}
+.sheet-danger .sheet-row-label{color:var(--red)}
+
+/* ══ MODAL ══ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:400;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--w);border-radius:16px;border:1.5px solid var(--gold-b);padding:18px;width:100%;max-width:400px;max-height:92vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:700;color:#7A6000;margin-bottom:13px}
+.modal-inp{width:100%;border:1px solid var(--teal-l);border-radius:9px;padding:9px 12px;font-size:14px;font-family:'Be Vietnam Pro',sans-serif;color:var(--td);outline:none;margin-bottom:10px;display:block}
+.modal-inp:focus{border-color:var(--teal)}
+.modal-inp::placeholder{color:var(--tl)}
+.modal-ta{width:100%;border:1px solid var(--teal-l);border-radius:9px;padding:9px 12px;font-size:14px;font-family:'Be Vietnam Pro',sans-serif;color:var(--td);outline:none;resize:vertical;min-height:90px;margin-bottom:10px;display:block}
+.modal-ta:focus{border-color:var(--teal)}
+.modal-ta::placeholder{color:var(--tl)}
+.modal-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap;align-items:center}
+.modal-cancel{background:var(--w);border:1px solid var(--bdr);border-radius:9px;padding:8px 16px;cursor:pointer;font-size:13.5px;font-family:'Be Vietnam Pro',sans-serif;color:var(--tm)}
+.modal-cancel:active{background:var(--gold-p)}
+.modal-ok{background:var(--teal);border:none;border-radius:9px;padding:8px 20px;cursor:pointer;font-size:13.5px;font-family:'Be Vietnam Pro',sans-serif;color:#fff}
+.modal-ok:active{opacity:.85}
+.modal-del{background:var(--red-l);border:1px solid rgba(224,82,82,.3);border-radius:9px;padding:8px 16px;cursor:pointer;font-size:13.5px;font-family:'Be Vietnam Pro',sans-serif;color:var(--red);margin-right:auto}
+.modal-del:active{background:#f9d5d5}
+
+/* desktop: no transition needed for screens */
+@media(min-width:700px){
+  .screen-list,.screen-detail{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 17 17" fill="none">
+          <circle cx="8.5" cy="8.5" r="3.2" stroke="#7A6000" stroke-width="1.4"/>
+          <line x1="8.5" y1="1" x2="8.5" y2="3.2" stroke="#7A6000" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="8.5" y1="13.8" x2="8.5" y2="16" stroke="#7A6000" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="1" y1="8.5" x2="3.2" y2="8.5" stroke="#7A6000" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="13.8" y1="8.5" x2="16" y2="8.5" stroke="#7A6000" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="3.3" y1="3.3" x2="4.85" y2="4.85" stroke="#7A6000" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="12.15" y1="12.15" x2="13.7" y2="13.7" stroke="#7A6000" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="13.7" y1="3.3" x2="12.15" y2="4.85" stroke="#7A6000" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="4.85" y1="12.15" x2="3.3" y2="13.7" stroke="#7A6000" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-text">RiseDaily</span>
+    </div>
+    <div class="topbar-center">
+      <button class="date-btn" onclick="toggleCal()">
+        <i class="ti ti-calendar" style="font-size:13px"></i>
+        <span id="date-label"></span>
+      </button>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="changeDay(-1)" aria-label="Hôm qua">&#8249;</button>
+      <button class="icon-btn" onclick="changeDay(1)" aria-label="Ngày mai">&#8250;</button>
+      <button class="icon-btn" onclick="openSettings()" aria-label="Cài đặt">
+        <i class="ti ti-dots-vertical" style="font-size:17px"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap">
+    <span style="font-size:11px;color:var(--tm)">Hôm nay</span>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="prog-txt" id="prog-txt">0 / 0</span>
+  </div>
+
+  <!-- SCREENS -->
+  <div class="screens">
+
+    <!-- SCREEN: LIST -->
+    <div class="screen screen-list" id="screen-list">
+      <div class="list-top">
+        <input class="srch-inp" id="srch-inp" placeholder="Tìm danh mục..." oninput="filterCats()"/>
+        <button class="add-cat-btn" onclick="openAddCat()" aria-label="Thêm">+</button>
+      </div>
+      <div id="cat-list"></div>
+    </div>
+
+    <!-- SCREEN: DETAIL -->
+    <div class="screen screen-detail" id="screen-detail">
+      <div class="detail-topbar">
+        <button class="back-btn" onclick="goBack()">
+          <i class="ti ti-chevron-left" style="font-size:15px"></i> Danh sách
+        </button>
+        <span class="detail-title" id="detail-title"></span>
+        <button class="detail-edit-btn" id="detail-edit-btn" onclick="editActiveCat()">
+          <i class="ti ti-edit" style="font-size:12px"></i> Sửa
+        </button>
+      </div>
+      <div id="detail-body"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div class="overlay" id="cal-overlay" onclick="handleCalBg(event)">
+  <div class="cal-box">
+    <div class="cal-nav">
+      <button onclick="calPrev()">&#8249;</button>
+      <span class="cal-month-label" id="cal-month-label"></span>
+      <button onclick="calNext()">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <button class="cal-close" onclick="toggleCal()">Đóng</button>
+  </div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="handleSheetBg(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hdr">
+      <span class="sheet-hdr-title">Cài đặt</span>
+      <button class="sheet-close" onclick="closeSettings()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="sheet-sec">
+      <div class="sheet-sec-title">Danh mục & Dữ liệu</div>
+      <div class="sheet-row" onclick="closeSettings();openAddCat()">
+        <div class="sheet-icon"><i class="ti ti-plus"></i></div>
+        <div class="sheet-row-text">
+          <div class="sheet-row-label">Thêm danh mục mới</div>
+          <div class="sheet-row-sub">Tạo thói quen / mục tiêu mới</div>
+        </div>
+        <i class="ti ti-chevron-right sheet-row-arrow"></i>
+      </div>
+      <div class="sheet-row" onclick="closeSettings();exportData()">
+        <div class="sheet-icon"><i class="ti ti-download"></i></div>
+        <div class="sheet-row-text">
+          <div class="sheet-row-label">Xuất dữ liệu</div>
+          <div class="sheet-row-sub">Lưu toàn bộ ra file JSON</div>
+        </div>
+        <i class="ti ti-chevron-right sheet-row-arrow"></i>
+      </div>
+      <div class="sheet-row" onclick="closeSettings();importData()">
+        <div class="sheet-icon"><i class="ti ti-upload"></i></div>
+        <div class="sheet-row-text">
+          <div class="sheet-row-label">Nhập dữ liệu</div>
+          <div class="sheet-row-sub">Khôi phục từ file JSON</div>
+        </div>
+        <i class="ti ti-chevron-right sheet-row-arrow"></i>
+      </div>
+      <div class="sheet-sec-title">Ứng dụng</div>
+      <div class="sheet-row">
+        <div class="sheet-icon"><i class="ti ti-info-circle"></i></div>
+        <div class="sheet-row-text">
+          <div class="sheet-row-label">RiseDaily v1.0</div>
+          <div class="sheet-row-sub">Theo dõi thói quen hàng ngày</div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-divider"></div>
+    <div class="sheet-sec">
+      <div class="sheet-row sheet-danger" onclick="confirmReset()">
+        <div class="sheet-icon"><i class="ti ti-trash"></i></div>
+        <div class="sheet-row-text">
+          <div class="sheet-row-label">Xóa toàn bộ dữ liệu</div>
+          <div class="sheet-row-sub">Không thể hoàn tác</div>
+        </div>
+        <i class="ti ti-chevron-right sheet-row-arrow"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT INPUT -->
+<input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)"/>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleModalBg(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Thêm</div>
+    <input class="modal-inp" id="modal-f1" placeholder=""/>
+    <div id="modal-extra"></div>
+    <div class="modal-row" id="modal-btns"></div>
+  </div>
+</div>
+
+<script>
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+var currentDate=new Date(); currentDate.setHours(0,0,0,0);
+var state={}, cats=[], activeCatId='', filterStr='';
+var calViewDate=new Date(currentDate);
+var modalMode='', modalTarget={};
+var inDetail=false;
+var dragSrcIdx=-1;
+
+/* DATA */
+function dk(d){return d.toISOString().slice(0,10);}
+function todayKey(){return dk(currentDate);}
+function getDaysInMonth(y,m){return new Date(y,m+1,0).getDate();}
+function uid(){return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function getDateLabel(d){return DOW[d.getDay()]+', '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+
+function loadData(){
+  try{
+    var s=JSON.parse(localStorage.getItem('rd6_state')||'{}'); state=s.state||{};
+    var c=JSON.parse(localStorage.getItem('rd6_cats')||'null');
+    if(c&&c.length){cats=c;}else{initDefaultCats();}
+  }catch(e){state={};initDefaultCats();}
+}
+function saveData(){
+  try{
+    localStorage.setItem('rd6_state',JSON.stringify({state}));
+    localStorage.setItem('rd6_cats',JSON.stringify(cats));
+  }catch(e){}
+}
+function getDayState(k){if(!state[k])state[k]={}; return state[k];}
+
+function exportData(){
+  var blob=new Blob([JSON.stringify({state:state,cats:cats},null,2)],{type:'application/json'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='risedaily-'+dk(new Date())+'.json'; a.click();
+}
+function importData(){document.getElementById('import-input').click();}
+function handleImport(e){
+  var file=e.target.files[0]; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var d=JSON.parse(ev.target.result);
+      if(d.cats&&d.state){cats=d.cats;state=d.state;saveData();if(cats.length)activeCatId=cats[0].id;renderAll();alert('Nhập thành công!');}
+      else{alert('File không hợp lệ.');}
+    }catch(ex){alert('Lỗi đọc file.');}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+function confirmReset(){
+  if(confirm('Xóa toàn bộ dữ liệu? Không thể hoàn tác!')){
+    state={};saveData();closeSettings();renderAll();
+  }
+}
+
+/* FORMAT TIMELINE */
+function formatTimeline(text){
+  if(!text) return '';
+  var sentences=[], buf='', i=0;
+  while(i<text.length){
+    buf+=text[i];
+    if(text[i]==='.' && i+1<text.length && text[i+1]===' '){
+      var nc=i+2<text.length?text[i+2]:'';
+      var cp=nc.codePointAt(0)||0;
+      var isUpper=(cp>=65&&cp<=90)||(cp>=192&&cp<=880);
+      if(isUpper){sentences.push(buf.trim());buf='';i+=2;continue;}
+    }
+    i++;
+  }
+  if(buf.trim())sentences.push(buf.trim());
+  return sentences.map(function(s){
+    if(s&&!s.endsWith('.'))s+='.';
+    return '<p style="margin:0 0 6px 0">'+s+'</p>';
+  }).join('');
+}
+
+/* NAVIGATION */
+function goToDetail(catId){
+  activeCatId=catId;
+  inDetail=true;
+  renderSidebar();
+  renderDetail();
+  var sl=document.getElementById('screen-list');
+  var sd=document.getElementById('screen-detail');
+  sl.classList.add('hidden');
+  sd.classList.add('visible');
+}
+function goBack(){
+  inDetail=false;
+  var sl=document.getElementById('screen-list');
+  var sd=document.getElementById('screen-detail');
+  sl.classList.remove('hidden');
+  sd.classList.remove('visible');
+}
+
+/* INTERACT */
+function toggle(catId,taskId){
+  var k=todayKey(); var ds=getDayState(k);
+  if(!ds[catId])ds[catId]={};
+  ds[catId][taskId]=!ds[catId][taskId];
+  saveData(); renderSidebar(); renderDetail(); updateProgress();
+}
+function toggleNote(id){
+  var panel=document.getElementById(id);
+  if(panel)panel.classList.toggle('open');
+  setTimeout(function(){
+    var ta=panel&&panel.querySelector('.note-ta');
+    if(ta&&panel.classList.contains('open')){autoResize(ta);}
+  },0);
+}
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=(el.scrollHeight)+'px';
+}
+function saveNote(catId,taskId){
+  var k=todayKey(); var ds=getDayState(k);
+  if(!ds[catId])ds[catId]={};
+  var ta=document.getElementById('nota-'+taskId);
+  if(ta){ds[catId]['note_'+taskId]=ta.value; saveData(); renderDetail();}
+}
+function updateProgress(){
+  var k=todayKey(); var ds=getDayState(k);
+  var total=0, done=0;
+  cats.forEach(function(c){c.tasks.forEach(function(t){total++;if(ds[c.id]&&ds[c.id][t.id])done++;});});
+  var pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-txt').textContent=done+' / '+total+' ('+pct+'%)';
+}
+function filterCats(){filterStr=document.getElementById('srch-inp').value.toLowerCase(); renderSidebar();}
+
+/* DRAG & DROP */
+function setupDrag(){
+  var list=document.getElementById('cat-list');
+  list.querySelectorAll('.drag-handle').forEach(function(handle){
+    handle.addEventListener('mousedown',function(e){startDrag(e);});
+    handle.addEventListener('touchstart',function(e){startDrag(e);},{passive:true});
+  });
+}
+function startDrag(e){
+  var item=e.currentTarget.closest('.cat-item');
+  var list=document.getElementById('cat-list');
+  var items=[].slice.call(list.querySelectorAll('.cat-item'));
+  dragSrcIdx=items.indexOf(item);
+  item.classList.add('dragging');
+
+  function getClientY(ev){return ev.touches?ev.touches[0].clientY:(ev.changedTouches?ev.changedTouches[0].clientY:ev.clientY);}
+
+  function onMove(ev){
+    var cy=getClientY(ev);
+    items.forEach(function(it,i){
+      it.classList.remove('drag-over');
+      var r=it.getBoundingClientRect();
+      if(cy>r.top&&cy<r.bottom&&i!==dragSrcIdx)it.classList.add('drag-over');
+    });
+  }
+  function onUp(ev){
+    item.classList.remove('dragging');
+    var cy=getClientY(ev);
+    var destIdx=-1;
+    items.forEach(function(it,i){
+      it.classList.remove('drag-over');
+      var r=it.getBoundingClientRect();
+      if(cy>r.top&&cy<r.bottom&&i!==dragSrcIdx)destIdx=i;
+    });
+    if(destIdx>=0){
+      var moved=cats.splice(dragSrcIdx,1)[0];
+      cats.splice(destIdx,0,moved);
+      saveData(); renderSidebar();
+    }
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove);
+    document.removeEventListener('touchend',onUp);
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+  document.addEventListener('touchmove',onMove,{passive:true});
+  document.addEventListener('touchend',onUp);
+}
+
+/* RENDER SIDEBAR */
+function renderSidebar(){
+  var k=todayKey(); var ds=getDayState(k);
+  var list=document.getElementById('cat-list'); list.innerHTML='';
+  var visIdx=0;
+  cats.forEach(function(cat,idx){
+    if(filterStr&&!cat.title.toLowerCase().includes(filterStr)&&!(cat.fullTitle||'').toLowerCase().includes(filterStr))return;
+    visIdx++;
+    var allDone=cat.tasks.length>0&&cat.tasks.every(function(t){return ds[cat.id]&&ds[cat.id][t.id];});
+    var isActive=cat.id===activeCatId;
+    var item=document.createElement('div');
+    item.className='cat-item'+(isActive?' active':'');
+    item.innerHTML=
+      '<span class="drag-handle" title="Kéo để sắp xếp"><i class="ti ti-grip-vertical"></i></span>'+
+      '<span class="cat-num">'+String(visIdx).padStart(2,'0')+'</span>'+
+      '<span class="cat-name">'+cat.title+'</span>'+
+      '<div class="cat-right">'+
+        '<span class="cat-done-dot'+(allDone?' show':'')+'"></span>'+
+        '<div class="cat-edit-btns">'+
+          '<button class="cat-edit-btn" onclick="event.stopPropagation();openEditCat(\''+cat.id+'\')" title="Sửa"><i class="ti ti-edit"></i></button>'+
+          '<button class="cat-edit-btn del" onclick="event.stopPropagation();confirmDelCat(\''+cat.id+'\')" title="Xóa"><i class="ti ti-trash"></i></button>'+
+        '</div>'+
+        '<i class="ti ti-chevron-right cat-chevron"></i>'+
+      '</div>';
+    item.addEventListener('click',function(){goToDetail(cat.id);});
+    list.appendChild(item);
+  });
+  setupDrag();
+}
+
+/* RENDER DETAIL */
+function renderDetail(){
+  var k=todayKey(); var ds=getDayState(k);
+  var cat=cats.find(function(c){return c.id===activeCatId;});
+  var body=document.getElementById('detail-body');
+  var titleEl=document.getElementById('detail-title');
+  if(!cat){body.innerHTML=''; titleEl.textContent=''; return;}
+
+  titleEl.textContent=cat.fullTitle||cat.title;
+
+  var html='';
+  /* KPI */
+  html+='<div class="detail-kpi">'+cat.kpi+'</div>';
+
+  /* Timeline */
+  var tagsHtml=(cat.tags||[]).map(function(t,i){
+    return '<span class="tag">'+t+'<button class="tag-del" onclick="deleteTag(\''+cat.id+'\','+i+')">&#215;</button></span>';
+  }).join('');
+  html+='<div class="layer-hdr">Ghi chú chi tiết &amp; Timeline</div>';
+  html+='<div class="tl-body">'+formatTimeline(cat.timeline)+'<div class="tags-row">'+tagsHtml+'<button class="add-tag-btn" onclick="openAddTag(\''+cat.id+'\')">+ Tag</button></div></div>';
+
+  /* Tasks */
+  html+='<div class="layer-hdr">Việc cần làm hôm nay</div>';
+  html+='<div class="tasks-wrap">';
+  cat.tasks.forEach(function(task){
+    var checked=!!(ds[cat.id]&&ds[cat.id][task.id]);
+    var noteVal=(ds[cat.id]&&ds[cat.id]['note_'+task.id])||'';
+    var noteId='ne-'+task.id;
+    html+=
+      '<div class="task-row" onclick="toggle(\''+cat.id+'\',\''+task.id+'\')">'+
+        '<div class="chk'+(checked?' done':'')+'">'+(checked?'&#10003;':'')+'</div>'+
+        '<div class="task-body">'+
+          '<div class="task-name'+(checked?' done':'')+'">'+task.name+'</div>'+
+          '<div class="task-det">'+task.detail+'</div>'+
+        '</div>'+
+        '<div class="task-btns" onclick="event.stopPropagation()">'+
+          '<button class="note-toggle-btn" onclick="toggleNote(\''+noteId+'\')">'+(noteVal?'Xem GC':'+ Ghi chú')+'</button>'+
+          '<button class="task-act-btn" onclick="openEditTask(\''+cat.id+'\',\''+task.id+'\')" title="Sửa"><i class="ti ti-edit"></i></button>'+
+          '<button class="task-act-btn del" onclick="confirmDelTask(\''+cat.id+'\',\''+task.id+'\')" title="Xóa"><i class="ti ti-trash"></i></button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="note-panel'+(noteVal?' open':'')+'" id="'+noteId+'">'+
+        '<textarea class="note-ta" id="nota-'+task.id+'" placeholder="Ghi cảm nhận, kết quả hôm nay..." oninput="autoResize(this)">'+noteVal+'</textarea>'+
+        '<button class="note-save-btn" onclick="saveNote(\''+cat.id+'\',\''+task.id+'\')">Lưu ghi chú</button>'+
+      '</div>';
+  });
+  html+='</div>';
+  html+='<div class="add-task-row">'+
+    '<input class="add-task-inp" id="add-inp-'+cat.id+'" placeholder="Thêm việc mới..." onkeydown="if(event.key===\'Enter\')quickAdd(\''+cat.id+'\')"/>'+
+    '<button class="add-task-btn" onclick="quickAdd(\''+cat.id+'\')">Thêm</button>'+
+  '</div>';
+
+  /* Streak */
+  var cd=new Date(currentDate), y=cd.getFullYear(), m=cd.getMonth();
+  var dim=getDaysInMonth(y,m);
+  var today=new Date(); today.setHours(0,0,0,0);
+  var isCurrMonth=today.getFullYear()===y&&today.getMonth()===m;
+  var maxDay=isCurrMonth?today.getDate():dim;
+  html+='<div class="layer-hdr">Streak tháng '+(m+1)+'/'+y+'</div>';
+  html+='<div class="streak-wrap"><div class="streak-dots">';
+  var daysDone=0, cur=0, maxCons=0;
+  for(var day=1;day<=dim;day++){
+    var dd=new Date(y,m,day);
+    var dk2=dk(dd);
+    var ds2=state[dk2]||{};
+    var done=cat.tasks.some(function(t){return ds2[cat.id]&&ds2[cat.id][t.id];});
+    var isTd=dd.getTime()===today.getTime();
+    var isFut=day>maxDay;
+    html+='<div class="dot'+(done?' done':'')+(isTd?' today':'')+(isFut?' future':'')+'" title="'+dk2+'">'+day+'</div>';
+    if(done)daysDone++;
+    if(done&&!isFut){cur++;maxCons=Math.max(maxCons,cur);}else if(!isFut){cur=0;}
+  }
+  html+='<span class="streak-cnt">'+daysDone+' ngày · Chuỗi: '+maxCons+'</span>';
+  html+='</div></div>';
+
+  body.innerHTML=html;
+
+  /* auto-resize open textareas */
+  body.querySelectorAll('.note-ta').forEach(function(ta){
+    ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px';
+  });
+}
+
+function editActiveCat(){openEditCat(activeCatId);}
+
+function renderAll(){renderSidebar();if(inDetail)renderDetail();updateProgress();}
+
+/* TASK HELPERS */
+function quickAdd(catId){
+  var inp=document.getElementById('add-inp-'+catId);
+  var name=inp&&inp.value.trim(); if(!name)return;
+  var cat=cats.find(function(c){return c.id===catId;}); if(!cat)return;
+  cat.tasks.push({id:uid(),name:name,detail:''});
+  inp.value=''; saveData(); renderDetail();
+}
+function deleteTag(catId,idx){
+  var cat=cats.find(function(c){return c.id===catId;}); if(!cat)return;
+  cat.tags.splice(idx,1); saveData(); renderDetail();
+}
+
+/* MODAL */
+function openAddTag(catId){
+  modalMode='add-tag'; modalTarget={catId:catId};
+  showModal('Thêm tag','Tên tag...','','',
+    '<button class="modal-cancel" onclick="closeModal()">Hủy</button><button class="modal-ok" onclick="modalSubmit()">Thêm</button>');
+}
+function openAddCat(){
+  modalMode='add-cat'; modalTarget={};
+  document.getElementById('modal-title').textContent='Thêm danh mục mới';
+  document.getElementById('modal-f1').placeholder='Tên ngắn (vd: Đọc sách)';
+  document.getElementById('modal-f1').value='';
+  document.getElementById('modal-extra').innerHTML=
+    '<input class="modal-inp" id="mf1b" placeholder="Tên đầy đủ (vd: Đọc sách đa thể loại)"/>'+
+    '<input class="modal-inp" id="mf2" placeholder="KPI / Mục tiêu ngắn..."/>'+
+    '<textarea class="modal-ta" id="mf3" placeholder="Ghi chú chi tiết & Timeline..."></textarea>';
+  document.getElementById('modal-btns').innerHTML=
+    '<button class="modal-cancel" onclick="closeModal()">Hủy</button><button class="modal-ok" onclick="modalSubmit()">Tạo</button>';
+  openModal();
+}
+function openEditCat(catId){
+  var cat=cats.find(function(c){return c.id===catId;}); if(!cat)return;
+  modalMode='edit-cat'; modalTarget={catId:catId};
+  document.getElementById('modal-title').textContent='Sửa danh mục';
+  document.getElementById('modal-f1').placeholder='Tên ngắn...';
+  document.getElementById('modal-f1').value=cat.title;
+  document.getElementById('modal-extra').innerHTML=
+    '<input class="modal-inp" id="mf1b" placeholder="Tên đầy đủ..." value="'+(cat.fullTitle||cat.title).replace(/"/g,'&quot;')+'"/>'+
+    '<input class="modal-inp" id="mf2" placeholder="KPI / Mục tiêu..." value="'+cat.kpi.replace(/"/g,'&quot;')+'"/>'+
+    '<textarea class="modal-ta" id="mf3" placeholder="Ghi chú & Timeline...">'+cat.timeline+'</textarea>';
+  document.getElementById('modal-btns').innerHTML=
+    '<button class="modal-del" onclick="confirmDelCat(\''+catId+'\')">Xóa</button>'+
+    '<button class="modal-cancel" onclick="closeModal()">Hủy</button>'+
+    '<button class="modal-ok" onclick="modalSubmit()">Lưu</button>';
+  openModal();
+}
+function openEditTask(catId,taskId){
+  var cat=cats.find(function(c){return c.id===catId;}); if(!cat)return;
+  var task=cat.tasks.find(function(t){return t.id===taskId;}); if(!task)return;
+  modalMode='edit-task'; modalTarget={catId:catId,taskId:taskId};
+  document.getElementById('modal-title').textContent='Sửa công việc';
+  document.getElementById('modal-f1').placeholder='Tên công việc...';
+  document.getElementById('modal-f1').value=task.name;
+  document.getElementById('modal-extra').innerHTML=
+    '<input class="modal-inp" id="mf2" placeholder="Chi tiết..." value="'+task.detail.replace(/"/g,'&quot;')+'"/>';
+  document.getElementById('modal-btns').innerHTML=
+    '<button class="modal-cancel" onclick="closeModal()">Hủy</button><button class="modal-ok" onclick="modalSubmit()">Lưu</button>';
+  openModal();
+}
+function confirmDelCat(catId){
+  var cat=cats.find(function(c){return c.id===catId;});
+  modalMode='del-cat'; modalTarget={catId:catId};
+  document.getElementById('modal-title').textContent='Xóa danh mục?';
+  var f1=document.getElementById('modal-f1'); f1.style.display='none';
+  document.getElementById('modal-extra').innerHTML=
+    '<p style="font-size:13px;color:var(--tm);margin-bottom:8px">Xóa "<strong>'+(cat?cat.title:'')+'</strong>"? Không thể hoàn tác.</p>';
+  document.getElementById('modal-btns').innerHTML=
+    '<button class="modal-cancel" onclick="closeModal()">Hủy</button><button class="modal-del" onclick="modalSubmit()">Xóa</button>';
+  openModal();
+}
+function confirmDelTask(catId,taskId){
+  var cat=cats.find(function(c){return c.id===catId;});
+  var task=cat&&cat.tasks.find(function(t){return t.id===taskId;});
+  modalMode='del-task'; modalTarget={catId:catId,taskId:taskId};
+  document.getElementById('modal-title').textContent='Xóa công việc?';
+  var f1=document.getElementById('modal-f1'); f1.style.display='none';
+  document.getElementById('modal-extra').innerHTML=
+    '<p style="font-size:13px;color:var(--tm);margin-bottom:8px">Xóa "<strong>'+(task?task.name:'')+'</strong>"?</p>';
+  document.getElementById('modal-btns').innerHTML=
+    '<button class="modal-cancel" onclick="closeModal()">Hủy</button><button class="modal-del" onclick="modalSubmit()">Xóa</button>';
+  openModal();
+}
+function showModal(title,ph1,ph1b,ph2,btns){
+  document.getElementById('modal-title').textContent=title;
+  var f1=document.getElementById('modal-f1'); f1.placeholder=ph1; f1.value=''; f1.style.display='block';
+  document.getElementById('modal-extra').innerHTML='';
+  document.getElementById('modal-btns').innerHTML=btns;
+  openModal();
+}
+function openModal(){
+  var f1=document.getElementById('modal-f1');
+  if(f1){f1.style.display='block'; f1.style.marginBottom='10px';}
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(function(){var f1=document.getElementById('modal-f1');if(f1&&f1.style.display!=='none')f1.focus();},80);
+}
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('open');
+  var f1=document.getElementById('modal-f1'); if(f1)f1.style.display='block';
+  modalMode=''; modalTarget={};
+}
+function handleModalBg(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
+
+function modalSubmit(){
+  var f1=document.getElementById('modal-f1');
+  var f1b=document.getElementById('mf1b');
+  var f2=document.getElementById('mf2');
+  var f3=document.getElementById('mf3');
+  if(modalMode==='add-cat'){
+    var title=(f1&&f1.value.trim())||''; if(!title)return;
+    cats.push({id:uid(),title:title,fullTitle:(f1b&&f1b.value.trim())||title,kpi:(f2&&f2.value.trim())||'',timeline:(f3&&f3.value.trim())||'',tags:[],tasks:[]});
+    activeCatId=cats[cats.length-1].id;
+  }else if(modalMode==='edit-cat'){
+    var cat=cats.find(function(c){return c.id===modalTarget.catId;}); if(!cat)return;
+    cat.title=(f1&&f1.value.trim())||cat.title;
+    cat.fullTitle=(f1b&&f1b.value.trim())||cat.title;
+    cat.kpi=(f2&&f2.value.trim())||'';
+    cat.timeline=(f3&&f3.value.trim())||'';
+  }else if(modalMode==='add-tag'){
+    var cat=cats.find(function(c){return c.id===modalTarget.catId;}); if(!cat)return;
+    var tag=(f1&&f1.value.trim())||''; if(!tag)return;
+    cat.tags.push(tag);
+  }else if(modalMode==='edit-task'){
+    var cat=cats.find(function(c){return c.id===modalTarget.catId;}); if(!cat)return;
+    var task=cat.tasks.find(function(t){return t.id===modalTarget.taskId;}); if(!task)return;
+    task.name=(f1&&f1.value.trim())||task.name;
+    task.detail=(f2&&f2.value.trim())||'';
+  }else if(modalMode==='del-cat'){
+    cats=cats.filter(function(c){return c.id!==modalTarget.catId;});
+    if(activeCatId===modalTarget.catId){activeCatId=cats.length?cats[0].id:''; if(inDetail)goBack();}
+  }else if(modalMode==='del-task'){
+    var cat=cats.find(function(c){return c.id===modalTarget.catId;}); if(!cat)return;
+    cat.tasks=cat.tasks.filter(function(t){return t.id!==modalTarget.taskId;});
+  }
+  saveData(); closeModal(); renderSidebar(); if(inDetail)renderDetail(); updateProgress();
+}
+
+/* SETTINGS */
+function openSettings(){document.getElementById('sheet-overlay').classList.add('open');}
+function closeSettings(){document.getElementById('sheet-overlay').classList.remove('open');}
+function handleSheetBg(e){if(e.target===document.getElementById('sheet-overlay'))closeSettings();}
+
+/* CALENDAR */
+function toggleCal(){
+  var ov=document.getElementById('cal-overlay');
+  var opening=ov.classList.toggle('open');
+  if(opening){calViewDate=new Date(currentDate); renderCal();}
+}
+function handleCalBg(e){if(e.target===document.getElementById('cal-overlay'))toggleCal();}
+function renderCal(){
+  var y=calViewDate.getFullYear(), m=calViewDate.getMonth();
+  document.getElementById('cal-month-label').textContent=MONS[m]+' '+y;
+  var grid=document.getElementById('cal-grid'); grid.innerHTML='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d){
+    var el=document.createElement('div'); el.className='cal-dow'; el.textContent=d; grid.appendChild(el);
+  });
+  var firstDow=new Date(y,m,1).getDay();
+  var dim=getDaysInMonth(y,m);
+  var today=new Date(); today.setHours(0,0,0,0);
+  var selDay=currentDate.getDate(), selM=currentDate.getMonth(), selY=currentDate.getFullYear();
+  for(var i=0;i<firstDow;i++){var el=document.createElement('div');el.className='cal-day other-month';grid.appendChild(el);}
+  for(var day=1;day<=dim;day++){
+    var el=document.createElement('div'); el.className='cal-day';
+    var dd=new Date(y,m,day);
+    if(dd.getTime()===today.getTime())el.classList.add('today');
+    if(day===selDay&&m===selM&&y===selY)el.classList.add('selected');
+    el.textContent=day;
+    (function(d2,y2,m2){
+      el.onclick=function(){currentDate=new Date(y2,m2,d2);document.getElementById('date-label').textContent=getDateLabel(currentDate);toggleCal();renderAll();};
+    })(day,y,m);
+    grid.appendChild(el);
+  }
+}
+function calPrev(){calViewDate=new Date(calViewDate.getFullYear(),calViewDate.getMonth()-1,1);renderCal();}
+function calNext(){calViewDate=new Date(calViewDate.getFullYear(),calViewDate.getMonth()+1,1);renderCal();}
+
+function changeDay(delta){
+  currentDate=new Date(currentDate.getTime()+delta*86400000);
+  document.getElementById('date-label').textContent=getDateLabel(currentDate);
+  renderAll();
+}
+
+/* DEFAULT DATA */
+function initDefaultCats(){
+  cats=[
+    {id:'doc-sach',title:'Đọc sách',fullTitle:'Đọc sách đa thể loại',kpi:'15–20 trang/ngày · 1–2 cuốn/tháng',
+     timeline:'Sáng 6:00–7:00: Tâm lý & Chuyên môn — đọc chậm, highlight từ khóa, vẽ sơ đồ tư duy. Đầu giờ chiều: Self-help — ghi 1 hành động áp dụng ngay. Tối trước ngủ 20 phút: Văn học — nuôi dưỡng cảm xúc, làm giàu vốn từ.',
+     tags:['Tâm lý / Sáng','Self-help / Chiều','Văn học / Tối'],
+     tasks:[{id:'ds1',name:'Đọc sách Tâm lý/Chuyên môn',detail:'Sáng 6:00–7:00 · Highlight từ khóa, vẽ sơ đồ tư duy'},{id:'ds2',name:'Đọc sách Self-help',detail:'Đầu giờ chiều · Ghi 1 hành động áp dụng ngay'},{id:'ds3',name:'Đọc văn học trước ngủ',detail:'20 phút · Nuôi dưỡng cảm xúc, giàu vốn từ'},{id:'ds4',name:'Viết 1 câu đúc kết vào giấy nhớ',detail:'Dán lên bìa sách sau mỗi chương đọc xong'}]},
+    {id:'ngoai-ngu',title:'Ngoại ngữ',fullTitle:'Học ngoại ngữ mới',kpi:'30–45 phút/ngày · 80% tiếng mới + 20% duy trì',
+     timeline:'Mục tiêu 6 tháng: giao tiếp cơ bản & xem phim không cần sub. Dùng tiếng Anh làm bàn đạp học tiếng Trung/Hàn. Sử dụng HelloChinese hoặc Duolingo bản tiếng Anh. Bật Dual Subtitles qua Language Reactor khi xem phim.',
+     tags:['HelloChinese / Duolingo','Dual Subtitles','Podcast tiếng Anh'],
+     tasks:[{id:'nn1',name:'Học từ vựng + ngữ pháp mới',detail:'20 phút · HelloChinese hoặc Duolingo'},{id:'nn2',name:'Luyện nghe & Shadowing',detail:'15 phút · Nhại giọng theo video/podcast'},{id:'nn3',name:'Xem phim Dual Subtitles',detail:'Language Reactor · Sub Anh + Trung/Hàn'},{id:'nn4',name:'Duy trì tiếng Anh',detail:'10 phút · Nghe podcast hoặc đọc báo'}]},
+    {id:'the-thao',title:'Thể thao',fullTitle:'Tập thể thao',kpi:'3 buổi/tuần · tối thiểu 45 phút/buổi',
+     timeline:'Tuần 1–2: Chỉ cần xuất hiện đúng giờ, chưa cần áp lực nặng. Tuần 3+: Tăng dần cường độ. Đăng ký PT hoặc tìm Workout Buddy để có cam kết. Môn cá nhân: Gym, Bơi lội, Yoga. Môn đồng đội: Cầu lông, Pickleball, Boxing.',
+     tags:['Gym / Bơi / Yoga','Cầu lông / Pickleball','Workout Buddy'],
+     tasks:[{id:'tt1',name:'Buổi tập hôm nay (45 phút+)',detail:'Gym / Chạy bộ / Bơi / Cầu lông...'},{id:'tt2',name:'Ghi lại cảm nhận sau tập',detail:'Năng lượng, cơ bắp đã tập, thời gian'},{id:'tt3',name:'Chuẩn bị đồ tập cho ngày mai',detail:'Xỏ giày, để balo gần cửa tối nay'}]},
+    {id:'skill',title:'High-Income Skill',fullTitle:'Kỹ năng High-Income Skill',kpi:'1 Portfolio sau 3 tháng · 1 khóa học nền tảng',
+     timeline:'Tuần 1–4: Học tư duy & nền tảng (AIDA, PAS, bố cục video). Tuần 5–8: Thực hành — viết 5 bài bán hàng, quay 3 video ngắn CapCut/Premiere. Tuần 9–12: Đóng gói Portfolio trên Notion hoặc Canva.',
+     tags:['Tuần 1–4: Nền tảng','Tuần 5–8: Thực hành','Tuần 9–12: Portfolio'],
+     tasks:[{id:'hi1',name:'Học bài lý thuyết hôm nay',detail:'YouTube / Coursera / Udemy · 30–45 phút'},{id:'hi2',name:'Thực hành 1 sản phẩm nhỏ',detail:'Viết 1 bài copy hoặc dựng video ngắn'},{id:'hi3',name:'Cập nhật Portfolio',detail:'Đưa sản phẩm vào Notion/Canva Portfolio'}]},
+    {id:'thuc-tap',title:'Thực tập',fullTitle:'Thực tập mùa hè',kpi:'1 vị trí internship · 2–3 tháng · Ưu tiên SME/Startup',
+     timeline:'Trước mùa hè 1 tháng: Thiết kế CV 1 trang, tập trung vào dự án trường học & hoạt động ngoại khóa. Chọn 5–7 công ty (ưu tiên SME, Startup, Agency nhỏ). Viết Cover Letter cá nhân hóa riêng từng công ty.',
+     tags:['CV 1 trang','Cover Letter riêng','5–7 công ty'],
+     tasks:[{id:'ttt1',name:'Rải CV / Theo dõi phản hồi',detail:'Cập nhật bảng theo dõi ứng tuyển'},{id:'ttt2',name:'Ghi chép quy trình làm việc',detail:'Quan sát cách vận hành công ty hôm nay'},{id:'ttt3',name:'Hỏi thêm việc sau khi xong',detail:'Chủ động hỏi "Em giúp gì thêm được không?"'}]},
+    {id:'lam-them',title:'Làm thêm',fullTitle:'Làm thêm part-time',kpi:'16–20 tiếng/tuần · Chọn việc tích lũy chất xám',
+     timeline:'Ưu tiên việc tích lũy chất xám đúng ngành. Học Marketing → CTV viết bài, Quản trị Fanpage. Học Ngôn ngữ → Trợ giảng, Gia sư, CTV dịch thuật. Học Quản trị → Thu ngân/Kiểm kho chuỗi lớn.',
+     tags:['CTV viết bài','Quản trị Fanpage','Gia sư / Trợ giảng'],
+     tasks:[{id:'lt1',name:'Hoàn thành ca làm hôm nay',detail:'Ghi giờ vào/ra, đầu việc đã xử lý'},{id:'lt2',name:'Học 1 điều mới từ công việc',detail:'Ghi lại 1 bài học thực tế từ hôm nay'}]},
+    {id:'brand',title:'Thương hiệu',fullTitle:'Thương hiệu cá nhân MXH',kpi:"2–3 bài/tuần · Document, don't create",
+     timeline:"Bước 1: Chọn nền tảng — TikTok/Reels nếu thích video; LinkedIn/Facebook nếu mạnh viết. Bước 2: Định vị người đồng hành kể lại hành trình học tập. Bước 3: Tài liệu hóa cuộc sống thật — thực tập, đọc sách, sửa CV.",
+     tags:['TikTok / Reels','LinkedIn / Facebook','Document thực tế'],
+     tasks:[{id:'th1',name:'Lên ý tưởng nội dung hôm nay',detail:'Hành trình thực tế: thực tập, đọc sách...'},{id:'th2',name:'Tạo và đăng 1 bài/video',detail:'Đăng đúng giờ cao điểm nền tảng mình chọn'},{id:'th3',name:'Tương tác với cộng đồng',detail:'Reply comment, kết nối người cùng chí hướng'}]},
+    {id:'cong-dong',title:'Cộng đồng',fullTitle:'Dự án cộng đồng & Thiền định',kpi:'1 dự án/1–3 tháng · Thiền để quản trị cảm xúc',
+     timeline:'Tìm qua NGO, CLB thanh niên: dự án môi trường, dạy học trẻ em nghèo. Khóa thiền: tham gia thiền trưa online hoặc cuối tuần tại thiền viện để rèn luyện quản trị cảm xúc.',
+     tags:['NGO / CLB Thanh niên','Thiền online/offline','Mở rộng kết nối'],
+     tasks:[{id:'cd1',name:'Tham gia hoạt động cộng đồng',detail:'Kiểm tra lịch dự án / sự kiện hôm nay'},{id:'cd2',name:'Thiền định (10–20 phút)',detail:'Sáng sớm hoặc trước ngủ · Tập trung hơi thở'}]},
+    {id:'detox',title:'Digital Detox',fullTitle:'Digital Detox',kpi:'Dưới 2 giờ/ngày điện thoại · Xóa app giải trí 7 ngày',
+     timeline:'Thông báo trước gia đình & bạn thân: nếu có việc gấp hãy gọi điện trực tiếp. Xóa TikTok, Facebook, Instagram 7 ngày. Bật Grayscale màn hình. Thay thế bằng đi dạo, gặp bạn bè, viết nhật ký tay.',
+     tags:['Xóa TikTok/FB/IG 7 ngày','Màn hình Grayscale','Nhật ký tay'],
+     tasks:[{id:'dx1',name:'Kiểm tra thời gian dùng điện thoại',detail:'Screen Time / Digital Wellbeing · Mục tiêu dưới 2 giờ'},{id:'dx2',name:'Hoạt động offline thay thế',detail:'Đi dạo / Gặp bạn / Viết nhật ký tay'}]},
+    {id:'moi-truong',title:'Môi trường',fullTitle:'Setup môi trường & không gian',kpi:'Thói quen tốt = Dễ nhất · Thói quen xấu = Khó nhất',
+     timeline:'Để sách trên gối sau khi gấp chăn mỗi sáng. Trái cây rửa sẵn xếp hộp thủy tinh ngang tầm mắt tủ lạnh. Cất mì tôm & đồ ăn vặt vào ngăn sâu. Tắt điện thoại, cất vào balo đặt cách bàn học 3 mét.',
+     tags:['Sách trên gối','Trái cây rửa sẵn','Điện thoại cách 3m'],
+     tasks:[{id:'mt1',name:'Đặt sách lên gối trước khi ngủ',detail:'Chuẩn bị sách cho buổi sáng mai'},{id:'mt2',name:'Chuẩn bị đồ ăn lành mạnh',detail:'Gọt trái cây, hộp thủy tinh ngang tầm mắt'},{id:'mt3',name:'Bàn học chỉ có tài liệu + nước',detail:'Cất điện thoại vào balo phòng khác'}]},
+    {id:'giao-tiep',title:'Giao tiếp',fullTitle:'Giao tiếp: Nói ít, nghe nhiều',kpi:'Quy tắc 2/3 · Trì hoãn 3 giây · Câu hỏi mở',
+     timeline:'Nguyên tắc 2/3: Dành 2 phần để nghe, 1 phần để nói trong mỗi cuộc trò chuyện. Kỹ thuật trì hoãn 3 giây: Dừng lại 3 giây trước khi phản hồi để xử lý thông tin và trả lời thấu đáo. Đặt câu hỏi mở thay vì đưa lời khuyên ngay.',
+     tags:['Nghe 2 / Nói 1','Trì hoãn 3 giây','Câu hỏi mở'],
+     tasks:[{id:'gt1',name:'Áp dụng quy tắc 2/3 hôm nay',detail:'Nghe nhiều hơn nói tỉ lệ 2:1'},{id:'gt2',name:'Thực hành kỹ thuật 3 giây',detail:'Đợi 3 giây sau khi đối phương dứt lời'},{id:'gt3',name:'Đặt ít nhất 2 câu hỏi mở',detail:'"Bạn cảm thấy thế nào?" / "Tại sao bạn chọn cách đó?"'}]},
+    {id:'mentor',title:'Mentor',fullTitle:'Tìm kiếm Mentor dẫn dắt',kpi:'1 Mentor trong ngành · Trao giá trị trước · 3 câu hỏi cụ thể',
+     timeline:'Sàng lọc đối tượng: anh/chị khóa trên xuất sắc, Leader tại nơi thực tập. Trao giá trị trước: Giúp việc nhỏ, gửi bài viết/thông tin hữu ích cho họ. Khi được gặp cafe: chuẩn bị 3 câu hỏi rất cụ thể về rắc rối đang gặp.',
+     tags:['Trao giá trị trước','3 câu hỏi cụ thể','Support dự án'],
+     tasks:[{id:'mn1',name:'Tìm & kết nối 1 người tiềm năng',detail:'LinkedIn / nơi thực tập · Chủ động giúp đỡ'},{id:'mn2',name:'Gửi thông tin hữu ích cho Mentor',detail:'Bài viết, cơ hội liên quan lĩnh vực họ quan tâm'},{id:'mn3',name:'Chuẩn bị câu hỏi cho buổi gặp',detail:'3 câu hỏi rất cụ thể về vấn đề đang gặp'}]},
+    {id:'ban-than',title:'Bản thân',fullTitle:'Hiểu bản thân: Là chính mình',kpi:'Ikigai · Nhật ký phản tư 10 phút/tối · Giá trị cốt lõi',
+     timeline:'Bài tập Ikigai: Viết giao điểm của 4 yếu tố — Thích, Giỏi, Xã hội cần, Kiếm tiền được. Nhật ký phản tư mỗi tối 10 phút với 3 câu hỏi: điều gì làm mình hạnh phúc nhất, năng lượng bị tụt ở đâu, mình có làm gì chỉ để vừa lòng người khác không.',
+     tags:['Ikigai 4 vòng tròn','Nhật ký tối 10 phút','Giá trị cốt lõi'],
+     tasks:[{id:'bt1',name:'Nhật ký phản tư tối nay (10 phút)',detail:'Điều gì làm mình hạnh phúc hôm nay? Năng lượng tụt ở đâu?'},{id:'bt2',name:'Câu hỏi tự kiểm tra',detail:'Hôm nay mình có làm gì chỉ để vừa lòng người khác không?'}]},
+    {id:'thoi-quen',title:'Thói quen',fullTitle:'Xây dựng thói quen nhỏ mỗi ngày',kpi:'Streak 21 ngày · Habit Stacking · Quy tắc 2 phút',
+     timeline:'Habit Stacking: Gắn thói quen mới vào sau thói quen cũ đã cố định. Ví dụ sau đánh răng sáng thì học 15 phút ngoại ngữ, sau tắm chiều thì xỏ giày chạy bộ 20 phút. Quy tắc 2 phút: chỉ cần bắt đầu 2 phút là vượt qua được sức ì.',
+     tags:['Habit Stacking','Quy tắc 2 phút','Streak 21 ngày'],
+     tasks:[{id:'tq1',name:'Habit Stacking buổi sáng',detail:'Sau đánh răng → 15 phút học ngoại ngữ'},{id:'tq2',name:'Habit Stacking buổi chiều',detail:'Sau tắm → Xỏ giày, chạy bộ 20 phút'},{id:'tq3',name:'Áp dụng quy tắc 2 phút nếu lười',detail:'Bắt đầu 2 phút nhỏ nhất có thể'}]},
+    {id:'tai-chinh',title:'Tài chính',fullTitle:'Quản lý tài chính cá nhân',kpi:'Tiết kiệm 10–20% thu nhập · Quỹ khẩn cấp 3–6 tháng',
+     timeline:'Ghi chép mọi khoản chi dù nhỏ nhất ngay khi vừa tiêu — dùng app Misa hoặc Money Lover. Quy tắc 24 giờ: Bỏ vào giỏ hàng và đợi 24 giờ trước khi mua đồ không thiết yếu. Quỹ khẩn cấp: Duy trì 3–6 tháng chi phí gửi tiết kiệm online.',
+     tags:['Misa / Money Lover','Ghi ngay khi chi','Quy tắc 24 giờ'],
+     tasks:[{id:'tc1',name:'Ghi chép chi tiêu hôm nay',detail:'Mọi khoản dù nhỏ: gửi xe, trà đá... ghi ngay'},{id:'tc2',name:'Kiểm tra ngân sách tuần',detail:'Còn bao nhiêu so với kế hoạch tháng này?'},{id:'tc3',name:'Áp dụng quy tắc 24 giờ',detail:'Có mua gì hôm nay không? Đợi 24h nếu không thiết yếu'}]},
+    {id:'quan-he',title:'Quan hệ',fullTitle:'Xây dựng mối quan hệ chất lượng',kpi:'Vòng tròn 5 người tích cực · Nuôi dưỡng chủ động',
+     timeline:'Vòng tròn 5 người: Bạn là trung bình cộng của 5 người dành thời gian nhiều nhất — nếu xung quanh tiêu cực hãy chủ động giãn cách. Nuôi dưỡng chủ động: Nhắn chúc mừng sinh nhật, hỏi thăm tiến độ công việc, rủ cafe khi họ đạt cột mốc.',
+     tags:['Vòng tròn 5 người','Chúc mừng sinh nhật','Cafe kết nối'],
+     tasks:[{id:'qh1',name:'Nhắn thăm hỏi 1 người quan trọng',detail:'Không cần lý do: chúc mừng, hỏi thăm, chia vui'},{id:'qh2',name:'Chia sẻ 1 điều hữu ích',detail:'Bài viết, cơ hội, thông tin có giá trị cho bạn bè'}]},
+    {id:'mindset',title:'Mindset',fullTitle:'Tư duy chiếc cốc rỗng',kpi:'Xóa "Tôi biết rồi" · Học từ mọi người · Tâm thế học việc',
+     timeline:'Xóa bỏ cụm từ nguy hiểm "Tôi biết rồi" ra khỏi từ điển. Thay vào đó hãy nói góc nhìn này hay quá, bạn nói rõ hơn được không. Ngay cả người nhỏ tuổi hơn hoặc làm khác ngành đều có trải nghiệm mà bạn chưa có.',
+     tags:['Không "Tôi biết rồi"','Học từ mọi người','Tâm thế mới bắt đầu'],
+     tasks:[{id:'ms1',name:'Học 1 điều từ người xung quanh',detail:'Dù nhỏ tuổi hay khác ngành · Ghi lại'},{id:'ms2',name:'Bắt gặp mình nói "Tôi biết rồi"?',detail:'Chủ động hỏi thêm thay vì đóng cửa tiếp nhận'}]},
+    {id:'hanh-phuc',title:'Hạnh phúc',fullTitle:'Tôn trọng & yêu thương bản thân',kpi:'Gratitude Journal 3 điều/tuần · Ăn mừng small wins',
+     timeline:'Gratitude Journal: Mỗi tuần viết 3 điều biết ơn về cơ thể, sức khỏe và những nỗ lực vượt khó của chính mình. Ăn mừng những chiến thắng nhỏ ngay lập tức — đừng đợi đến khi thành công vang dội mới công nhận bản thân.',
+     tags:['Gratitude Journal','Small Wins','Thưởng bản thân'],
+     tasks:[{id:'hp1',name:'Viết 1 điều biết ơn bản thân hôm nay',detail:'Cơ thể khỏe, nỗ lực đã làm, khoảnh khắc nhỏ đẹp'},{id:'hp2',name:'Nhận ra & ăn mừng 1 chiến thắng nhỏ',detail:'Dù nhỏ: đọc xong chương sách, tập đúng giờ...'}]},
+    {id:'muc-tieu',title:'Mục tiêu',fullTitle:'Mục tiêu thực tế, không chứng chỉ',kpi:'Mục tiêu phi chứng chỉ · Cá nhân hóa lộ trình · Duy trì cảm hứng',
+     timeline:'Đổi mục tiêu thi cử áp lực thành hành động cụ thể: học tiếng Hàn để dịch cuốn tiểu thuyết yêu thích, học tiếng Trung để tự sang Quảng Châu nhập hàng. Cá nhân hóa: 70% Nghe+Shadowing nếu mục tiêu là giao tiếp, hoặc 70% Ngữ pháp+Đọc hiểu nếu mục tiêu là dịch sách.',
+     tags:['Mục tiêu hành động','70% kỹ năng chủ đạo','Xem phim không sub'],
+     tasks:[{id:'mc1',name:'Viết lại mục tiêu dưới dạng hành động',detail:'"Tôi học để..." cụ thể, không phải tên chứng chỉ'},{id:'mc2',name:'Kiểm tra tiến độ mục tiêu tháng này',detail:'Mình đang ở đâu so với mục tiêu 6 tháng?'}]},
+  ];
+  if(cats.length)activeCatId=cats[0].id;
+}
+
+/* BOOT */
+loadData();
+if(!activeCatId&&cats.length)activeCatId=cats[0].id;
+document.getElementById('date-label').textContent=getDateLabel(currentDate);
+renderSidebar();
+updateProgress();
+</script>
+</body>
+</html>
